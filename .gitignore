@@ -48,3 +48,9 @@ tags
 
 # OSX
 .DS_Store
+
+# virtualenv
+venv
+
+# other
+.vscode

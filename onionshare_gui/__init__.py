@@ -26,29 +26,32 @@ import signal
 from .widgets import Alert
 from PyQt5 import QtCore, QtWidgets
 
-from onionshare import strings
 from onionshare.common import Common
 from onionshare.onion import Onion
 from onionshare.onionshare import OnionShare
 
 from .onionshare_gui import OnionShareGui
 
+
 class Application(QtWidgets.QApplication):
     """
     This is Qt's QApplication class. It has been overridden to support threads
     and the quick keyboard shortcut.
     """
+
     def __init__(self, common):
-        if common.platform == 'Linux' or common.platform == 'BSD':
+        if common.platform == "Linux" or common.platform == "BSD":
             self.setAttribute(QtCore.Qt.AA_X11InitThreads, True)
         QtWidgets.QApplication.__init__(self, sys.argv)
         self.installEventFilter(self)
 
     def eventFilter(self, obj, event):
-        if (event.type() == QtCore.QEvent.KeyPress and
-            event.key() == QtCore.Qt.Key_Q and
-            event.modifiers() == QtCore.Qt.ControlModifier):
-                self.quit()
+        if (
+            event.type() == QtCore.QEvent.KeyPress
+            and event.key() == QtCore.Qt.Key_Q
+            and event.modifiers() == QtCore.Qt.ControlModifier
+        ):
+            self.quit()
         return False
 
 
@@ -59,16 +62,8 @@ def main():
     common = Common()
     common.define_css()
 
-    # Load the default settings and strings early, for the sake of being able to parse options.
-    # These won't be in the user's chosen locale necessarily, but we need to parse them
-    # early in order to even display the option to pass alternate settings (which might
-    # contain a preferred locale).
-    # If an alternate --config is passed, we'll reload strings later.
-    common.load_settings()
-    strings.load_strings(common)
-
     # Display OnionShare banner
-    print(strings._('version_string').format(common.version))
+    print(f"OnionShare {common.version} | https://onionshare.org/")
 
     # Allow Ctrl-C to smoothly quit the program instead of throwing an exception
     # https://stackoverflow.com/questions/42814093/how-to-handle-ctrlc-in-python-app-with-pyqt
@@ -79,11 +74,34 @@ def main():
     qtapp = Application(common)
 
     # Parse arguments
-    parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=48))
-    parser.add_argument('--local-only', action='store_true', dest='local_only', help=strings._("help_local_only"))
-    parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', help=strings._("help_verbose"))
-    parser.add_argument('--filenames', metavar='filenames', nargs='+', help=strings._('help_filename'))
-    parser.add_argument('--config', metavar='config', default=False, help=strings._('help_config'))
+    parser = argparse.ArgumentParser(
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=48)
+    )
+    parser.add_argument(
+        "--local-only",
+        action="store_true",
+        dest="local_only",
+        help="Don't use Tor (only for development)",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        dest="verbose",
+        help="Log OnionShare errors to stdout, and web errors to disk",
+    )
+    parser.add_argument(
+        "--filenames",
+        metavar="filenames",
+        nargs="+",
+        help="List of files or folders to share",
+    )
+    parser.add_argument(
+        "--config",
+        metavar="config",
+        default=False,
+        help="Custom JSON config file location (optional)",
+    )
     args = parser.parse_args()
 
     filenames = args.filenames
@@ -93,9 +111,7 @@ def main():
 
     config = args.config
     if config:
-        # Re-load the strings, in case the provided config has changed locale
         common.load_settings(config)
-        strings.load_strings(common)
 
     local_only = bool(args.local_only)
     verbose = bool(args.verbose)
@@ -108,10 +124,10 @@ def main():
         valid = True
         for filename in filenames:
             if not os.path.isfile(filename) and not os.path.isdir(filename):
-                Alert(common, strings._("not_a_file").format(filename))
+                Alert(common, f"{filename} is not a valid file.")
                 valid = False
             if not os.access(filename, os.R_OK):
-                Alert(common, strings._("not_a_readable_file").format(filename))
+                Alert(common, f"{filename} is not a readable file.")
                 valid = False
         if not valid:
             sys.exit()
@@ -129,10 +145,12 @@ def main():
     def shutdown():
         onion.cleanup()
         app.cleanup()
+
     qtapp.aboutToQuit.connect(shutdown)
 
     # All done
     sys.exit(qtapp.exec_())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
